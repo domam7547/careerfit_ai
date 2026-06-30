@@ -17,7 +17,7 @@
 ## 진행 현황
 
 - [v] 1일차: 프로젝트 기획 및 개발 환경 세팅
-- [ ] 2일차: FastAPI 서버 구축 및 Gemini API 연결
+- [v] 2일차: FastAPI 서버 구축 및 Gemini API 연결
 - [ ] 3일차: 데이터 파이프라인 구축
 - [ ] 4일차: RAG 기반 서비스 + React UI
 - [ ] 5일차: Docker + 포트폴리오 완성
