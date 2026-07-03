@@ -58,18 +58,6 @@ def load_data(filepath: str) -> pd.DataFrame:
 
 
 
-# 실행 테스트
-
-if __name__ == "__main__":
-
- df_jobs = load_data(JOBS_CSV)
-
- print()
-
- print("=== 처음 3행 미리보기 ===")
-
- print(df_jobs.head(3).to_string())
-
  #결측치 확인
 
 def check_missing(df: pd.DataFrame) -> pd.DataFrame:
@@ -110,7 +98,7 @@ def check_missing(df: pd.DataFrame) -> pd.DataFrame:
  
  # 결측치 처리
  
- def handle_missing(df: pd.DataFrame) -> pd.DataFrame:
+def handle_missing(df: pd.DataFrame) -> pd.DataFrame:
     """
     결측치를 처리합니다.
     - 텍스트 컬럼: 빈 문자열로 채웁니다
@@ -133,3 +121,215 @@ def check_missing(df: pd.DataFrame) -> pd.DataFrame:
     print(f"   처리 전: {before}행 → 처리 후: {after}행")
     print(f"   제거된 행: {before - after}행")
     return df
+
+## 중복 확인 및 제거 함수 추가 
+
+def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
+
+    """
+
+    중복 행을 확인하고 제거합니다.
+
+    company + title 조합이 같으면 중복으로 판단합니다.
+
+    """
+
+    print("\n=== 중복 확인 ===")
+
+    before = len(df)
+
+    # company + title 기준으로 중복 확인
+
+    duplicated = df.duplicated(subset=["company", "title"], keep=False)
+
+    if duplicated.sum() > 0:
+
+        print(f"   ⚠️  중복 발견: {duplicated.sum()}행")
+
+        print(df[duplicated][["company", "title"]])
+
+    else:
+
+        print("   ✅ 중복 없음")
+
+    # 첫 번째 행만 남기고 중복 제거
+
+    df = df.drop_duplicates(subset=["company", "title"], keep="first")
+
+    after = len(df)
+
+    print(f"   제거 후: {after}행 (제거: {before - after}행)")
+
+    return df
+
+
+
+# preprocess.py 스킬 키워드 표준화
+
+# 표준화 사전: 왼쪽 → 오른쪽으로 변환합니다
+
+SKILL_NORMALIZATION = {
+
+    "python": "Python",
+
+    "sql": "SQL",
+
+    "ai": "AI",
+
+    "ml": "머신러닝",
+
+    "machine learning": "머신러닝",
+
+    "deep learning": "딥러닝",
+
+    "r": "R",         # 대소문자 주의
+
+    "js": "JavaScript",
+
+    "javascript": "JavaScript",
+
+    "tableau": "Tableau",
+
+    "powerbi": "Power BI",
+
+    "power bi": "Power BI",
+
+}
+
+def normalize_skills(skills_str: str) -> str:
+
+    """
+
+    스킬 키워드 문자열을 표준화합니다.
+
+    입력: "python, sql, Machine Learning"
+
+    출력: "Python, SQL, 머신러닝"
+
+    """
+
+    if not isinstance(skills_str, str) or not skills_str.strip():
+
+        return ""
+
+    skills = [s.strip() for s in skills_str.split(",")]
+
+    normalized = []
+
+    for skill in skills:
+
+        # 소문자로 변환해서 사전에서 찾기
+
+        lower = skill.lower()
+
+        # 사전에 있으면 표준화된 이름으로, 없으면 원래 값 유지
+
+        normalized.append(SKILL_NORMALIZATION.get(lower, skill))
+
+    return ", ".join(normalized)
+
+def standardize_skills(df: pd.DataFrame) -> pd.DataFrame:
+
+    """
+
+    required_skills, preferred_skills 컬럼 전체에 표준화를 적용합니다.
+
+    """
+
+    print("\n=== 스킬 키워드 표준화 ===")
+
+    for col in ["required_skills", "preferred_skills"]:
+
+        if col in df.columns:
+
+            df[col] = df[col].apply(normalize_skills)
+
+    print(" ✅ 표준화 완료")
+
+    # 표준화 결과 샘플 출력
+
+    print("\n [표준화 전후 비교 샘플]")
+
+    print(df[["title", "required_skills"]].head(3).to_string())
+
+    return df
+
+
+# SQlite db에 저장
+
+import sqlite3
+
+def save_to_sqlite(df: pd.DataFrame, db_path: str) -> None:
+    """
+    전처리된 DataFrame을 SQLite 데이터베이스에 저장합니다.
+
+    요리 비유:
+    손질이 끝난 재료를 냉장고(SQLite)에 정리해서 넣는 단계입니다.
+    """
+    print(f"\n=== SQLite 저장 ===")
+
+    conn = sqlite3.connect(db_path)
+
+    # DataFrame을 SQL 테이블로 저장
+    # if_exists="replace": 테이블이 이미 있으면 덮어씁니다
+    df.to_sql("jobs", conn, if_exists="replace", index=False)
+
+    # 저장 확인
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM jobs")
+    count = cursor.fetchone()[0]
+
+    print(f"   ✅ 저장 완료: jobs 테이블에 {count}행 저장됨")
+    print(f"   파일 위치: {db_path}")
+
+    conn.close()
+
+
+# SQLite 조회 테스트
+
+def query_sqlite(db_path: str) -> None:
+    """
+    SQLite에서 데이터를 조회해 저장 결과를 확인합니다.
+    """
+    print(f"\n=== SQLite 조회 테스트 ===")
+    conn = sqlite3.connect(db_path)
+
+    # 1. 전체 행 수
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM jobs")
+    print(f"   전체 공고 수: {cursor.fetchone()[0]}개")
+
+    # 2. 직무 분류별 개수
+    print("\n   [직무 분류별 공고 수]")
+    cursor.execute("""
+        SELECT job_type, COUNT(*) as count
+        FROM jobs
+        GROUP BY job_type
+        ORDER BY count DESC
+    """)
+    for row in cursor.fetchall():
+        print(f"   - {row[0]}: {row[1]}개")
+
+    # 3. Python 필수 스킬 공고만 조회
+    print("\n   [Python이 필요한 공고]")
+    cursor.execute("""
+        SELECT company, title, required_skills
+        FROM jobs
+        WHERE required_skills LIKE '%Python%'
+        LIMIT 3
+    """)
+    for row in cursor.fetchall():
+        print(f"   - {row[0]} | {row[1]}")
+        print(f"     스킬: {row[2]}")
+
+    conn.close()
+
+if __name__ == "__main__":
+    df_jobs = load_data(JOBS_CSV)
+    df_jobs = check_missing(df_jobs)
+    df_jobs = handle_missing(df_jobs)
+    df_jobs = remove_duplicates(df_jobs)
+    df_jobs = standardize_skills(df_jobs)
+    save_to_sqlite(df_jobs, DB_PATH)
+    query_sqlite(DB_PATH)                   
+    print(f"\n✅ 전처리 완료: 최종 {len(df_jobs)}행")
