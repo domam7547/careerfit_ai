@@ -24,7 +24,7 @@
 
 ## 1일차
 * 파이썬 가상환경 및 프로젝트 폴더 구성 
-
+(기대 구조도)
 careerfit_ai/
 │
 ├── backend/                  # FastAPI 백엔드
