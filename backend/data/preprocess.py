@@ -324,6 +324,60 @@ def query_sqlite(db_path: str) -> None:
 
     conn.close()
 
+
+def convert_to_rag_documents(df: pd.DataFrame) -> list:
+    """
+    DataFrame의 각 행을 RAG 검색에 적합한 자연어 문서로 변환합니다.
+
+    요리 비유:
+    냉장고의 재료 목록을 셰프가 바로 읽을 수 있는 레시피 카드로 변환합니다.
+    """
+    print("\n=== RAG 문서 변환 ===")
+    documents = []
+
+    for _, row in df.iterrows():
+        # 자연어 문서 텍스트 생성
+        doc_text = (
+            f"{row.get('company', '')}에서 {row.get('title', '')}를 채용합니다. "
+            f"필수 스킬은 {row.get('required_skills', '정보 없음')}입니다. "
+            f"우대 스킬: {row.get('preferred_skills', '없음')}. "
+            f"업무 내용: {row.get('description', '정보 없음')}"
+        )
+
+        # metadata: 검색 결과를 필터링하거나 출처를 표시할 때 사용합니다
+        metadata = {
+            "id": str(row.get("id", "")),
+            "company": str(row.get("company", "")),
+            "title": str(row.get("title", "")),
+            "job_type": str(row.get("job_type", "")),
+            "deadline": str(row.get("deadline", "")),
+            "source": "jobs.csv"
+        }
+
+        documents.append({
+            "text": doc_text,
+            "metadata": metadata,
+            "doc_id": f"job_{row.get('id', '')}"  # ChromaDB의 고유 ID
+        })
+
+    print(f"   ✅ {len(documents)}개 문서 변환 완료")
+    print("\n   [첫 번째 문서 미리보기]")
+    print(f"   ID: {documents[0]['doc_id']}")
+    print(f"   텍스트: {documents[0]['text'][:100]}...")
+    print(f"   메타데이터: {documents[0]['metadata']}")
+
+    return documents
+
+
+def save_rag_documents(documents: list, json_path: str) -> None:
+    """
+    RAG 문서를 JSON 파일로 저장합니다.
+    ChromaDB에 저장하기 전 중간 저장 역할을 합니다.
+    """
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(documents, f, ensure_ascii=False, indent=2)
+    print(f"\n   ✅ RAG 문서 JSON 저장: {json_path}")
+
 if __name__ == "__main__":
     df_jobs = load_data(JOBS_CSV)
     df_jobs = check_missing(df_jobs)
@@ -331,5 +385,7 @@ if __name__ == "__main__":
     df_jobs = remove_duplicates(df_jobs)
     df_jobs = standardize_skills(df_jobs)
     save_to_sqlite(df_jobs, DB_PATH)
-    query_sqlite(DB_PATH)                   
-    print(f"\n✅ 전처리 완료: 최종 {len(df_jobs)}행")
+    query_sqlite(DB_PATH)
+    rag_docs = convert_to_rag_documents(df_jobs)  # ← 추가
+    save_rag_documents(rag_docs, RAG_JSON)         # ← 추가
+    print(f"\n✅ 전처리 완료: 최종 {len(df_jobs)}행, RAG 문서 {len(rag_docs)}개")
