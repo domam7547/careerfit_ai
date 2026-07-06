@@ -61,7 +61,13 @@ function App() {
 
         {result && (
           <div className="mt-8 space-y-4">
-            <ResultCard answer={result.answer} />
+            <ResultCard
+              answer={result.answer}
+              matchedSkills={result.matched_skills}
+              missingSkills={result.missing_skills}
+              recommendedProjects={result.recommended_projects}
+              confidence={result.confidence}
+            />
             {result.sources && result.sources.length > 0 && (
               <SourceCard sources={result.sources} />
             )}

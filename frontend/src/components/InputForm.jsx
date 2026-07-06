@@ -21,7 +21,7 @@ function InputForm({ onSubmit, isLoading }) {
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">보유 스킬 (쉼표 구분)</label>
+          <label className="block text-sm font-medium text-slate-600 mb-1">보유 스킬</label>
           <input type="text" value={skillsInput} onChange={e => setSkillsInput(e.target.value)}
             placeholder="예: Python, SQL, R"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
