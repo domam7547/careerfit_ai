@@ -31,7 +31,12 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.5-flash-lite")
 # [요리] 비유: 셰프별 출입증입니다.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
+HUGGINGFACE_TOKEN = (
+    os.getenv("HUGGINGFACE_TOKEN")
+    or os.getenv("HUGGINGFACE_API_KEY")
+    or os.getenv("HuggingFace_API_Key")
+)
+HUGGINGFACE_PROVIDER = os.getenv("HUGGINGFACE_PROVIDER")
 
 # Ollama는 로컬 서버 주소를 사용합니다.
 # 기본 주소는 http://localhost:11434 입니다.
@@ -312,13 +317,17 @@ def call_huggingface(prompt: str) -> str:
     """
 
     if not HUGGINGFACE_TOKEN:
-        raise ValueError("HUGGINGFACE_TOKEN이 .env에 없습니다.")
+        raise ValueError(
+            "HUGGINGFACE_TOKEN이 .env에 없습니다. "
+            "HUGGINGFACE_TOKEN 또는 HUGGINGFACE_API_KEY를 설정하세요."
+        )
 
     from huggingface_hub import InferenceClient
 
     client = InferenceClient(
         model=PROVIDER_MODEL,
         token=HUGGINGFACE_TOKEN,
+        provider=HUGGINGFACE_PROVIDER,
     )
 
     response = client.chat_completion(

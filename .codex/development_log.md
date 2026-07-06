@@ -17,3 +17,147 @@
 ### 메모
 - 이후 작업은 `project-guide.md`의 답변 원칙과 보안 원칙을 우선 적용한다.
 - 여러 파일 수정이 필요한 경우에는 수정 이유, 대상 파일, 예상 영향을 먼저 설명한 뒤 진행한다.
+
+## 2026-07-06
+
+### 이번 세션에서 한 작업
+- `.codex/project-guide.md`, `README.md`, `docs/PROJECT_PLAN.md`를 다시 읽고 현재 상태를 점검했다.
+- `backend/data/rag_documents.json`을 메타데이터 확장 전 백업했다.
+  - 백업 파일: `backend/data/rag_documents.backup.json`
+- `backend/data/preprocess.py`를 점검했고, 실행 결과 생성된 `rag_documents.json`의 메타데이터를 확인했다.
+  - 현재 `deadline_month`, `is_startup`, `first_saved_date`가 들어간 상태다.
+  - 다만 `deadline_month`는 문자열이고, 일부 `deadline`은 형식 불일치 또는 `nan` 문자열 문제가 있었다.
+- ChromaDB 설치/저장 상태를 확인했다.
+  - `backend/requirements.txt`에 `chromadb==0.5.23` 존재
+  - `backend/chroma_db/chroma.sqlite3` 및 내부 디렉터리 생성 확인
+- RAG 연결 흐름을 정리했다.
+  - `backend/services/rag_service.py` 생성/사용
+  - `backend/services/llm_service.py`를 RAG 프롬프트 + provider 분기 + Ollama 통합 구조로 정리
+  - `backend/routers/analyze.py`를 `search_documents -> get_llm_response` 흐름으로 연결
+- 프론트엔드 `frontend/` 폴더 구조를 점검했다.
+  - 처음에는 React/Vite 스캐폴드로 보였으나, 이후 실제 `InputForm`, `ResultCard`, `SourceCard` 기반 API 연동 UI가 존재함을 확인했다.
+- `careerfit-ai/` 폴더를 조사했다.
+  - 실행용 앱 코드가 아니라 AI 참조용 하네스/가이드 문서 폴더임을 확인했다.
+- `MODEL_BENCHMARK.md`를 생성/보강했다.
+  - 1차 평가 대상 모델을 정리
+  - Mock Response 1차 평가 기록 추가
+  - Ollama `llama3.2:3b` 1차 평가 기록 추가
+- 하네스 기준으로 UI 작업을 수행했다.
+  - 참조한 파일:
+    - `careerfit-ai/harness/MAIN_HARNESS.md`
+    - `careerfit-ai/harness/ROUTING.md`
+    - `careerfit-ai/harness/agents/ui-designer.md`
+    - `careerfit-ai/harness/skills/design-skill.md`
+    - `careerfit-ai/harness/checks/security-check.md`
+  - 주의: 요청받은 `careerfit-ai/harness/checks/ui-test-check.md`는 실제 파일이 없었다.
+
+### 백엔드 관련 현재 상태
+- `backend/services/llm_service.py`
+  - `.env`의 `LLM_MODEL`을 기준으로 `gemini`, `mistral`, `ollama`, `huggingface` 분기 구조를 가짐
+  - `MOCK_MODE=true`이면 실제 API 호출 없이 mock 응답 반환
+  - Ollama 호출 함수는 통합되어 있고 기존 `ollama_service.py` 역할을 흡수한 구조
+- `backend/services/rag_service.py`
+  - ChromaDB 컬렉션을 가져오고 비어 있으면 `rag_documents.json`을 다시 로드
+  - `search_documents(query, n_results, job_type=None)` 형태
+  - `where_filter`로 `job_type` 필터 지원
+- `backend/routers/analyze.py`
+  - 현재 `context_docs = search_documents(query, n_results=3)`로 호출
+  - `job_type` 필터는 아직 analyze 경로에서 사용하지 않음
+- 런타임 검증 상태
+  - 문법 검사는 통과
+  - Uvicorn 실행 및 `POST /analyze` 200 OK 확인
+  - ChromaDB telemetry 경고는 있으나 기능 자체는 동작함
+  - Codex 환경에서는 ONNX 임시 디렉터리 제약 때문에 Chroma query가 실패했지만, 사용자 로컬 환경에서는 성공
+
+### 벤치마크 관련 현재 상태
+- `MODEL_BENCHMARK.md`는 프로젝트 루트에 존재
+- 현재 기록된 1차 평가
+  - Mock Response
+  - Ollama `llama3.2:3b`
+- Gemini
+  - API 한도 초과로 실제 벤치마크 중단 상태
+- Mistral
+  - `LLM_MODEL=mistral-small-latest` 사용을 검토했으나, API 과금 가능성이 있어 실제 테스트는 보류
+- Hugging Face
+  - 후보에서 논의했으나 아직 실측하지 않음
+
+### 프론트엔드 관련 현재 상태
+- 수정 파일
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/InputForm.jsx`
+  - `frontend/src/components/ResultCard.jsx`
+- `App.jsx`
+  - `ResultCard`에 `answer`, `matched_skills`, `missing_skills`, `recommended_projects`, `confidence`를 props로 넘기도록 변경
+- `InputForm.jsx`
+  - `"보유 스킬 (쉼표 구분)"` 라벨을 `"보유 스킬"`로 수정
+- `ResultCard.jsx`
+  - 발표용 표시를 위해 여러 차례 수정
+  - 최종 방향은 `design-skill.md` 기준으로 과한 장식을 줄이고, 회색 중심의 깔끔한 카드 톤으로 정리
+  - 현재 `answer`를 `formattedAnswer`로 가공해서 렌더링
+    - `\\n` -> 실제 개행 문자 치환
+    - 숫자 목록 `1.`, `2.`, `3.` 앞에 개행을 넣으려는 보정 로직 추가
+- 중요한 현재 문제
+  - 사용자가 확인한 결과, `answer`의 `1.`, `2.`, `3.` 줄바꿈이 여전히 기대대로 보이지 않음
+  - 즉 `ResultCard.jsx`의 줄바꿈 보정 로직은 아직 미해결 상태
+  - 다음 세션에서는 이 문제를 우선 디버깅해야 함
+
+### 사용자가 중요하게 밝힌 제약/선호
+- `project-guide.md`를 반드시 따를 것
+- 여러 파일 수정 전에는 이유/대상/영향을 설명할 것
+- `.env`는 읽지 말 것
+- React 작업에서는 backend를 수정하지 말 것
+- API Key를 React 코드에 넣지 말 것
+- 전체 코드를 다시 쓰기보다 수정 방향과 필요한 코드 조각을 선호하지만, 명시적으로 요청하면 직접 수정 가능
+
+### Git/작업 트리 상태 메모
+- 세션 중 사용자 커밋이 여러 번 있었다.
+- 현재 확인된 워킹 트리 변경:
+  - 수정됨: `.gitignore`
+  - 수정됨: `frontend/src/App.jsx`
+  - 수정됨: `frontend/src/components/InputForm.jsx`
+  - 수정됨: `frontend/src/components/ResultCard.jsx`
+  - 미추적: `MODEL_BENCHMARK.md`
+- 커밋 메시지는 사용자 요청 시 한국어/영어 모두 여러 차례 추천했다.
+
+### 다음 세션 우선 작업
+1. `ResultCard.jsx`에서 `answer` 번호 목록 줄바꿈이 실제 화면에 반영되지 않는 원인 확인
+2. 필요하면 `answer`를 문단 배열로 변환해 렌더링하는 방식으로 변경
+3. 이후 모델 벤치마크는 비용 없는 후보(Mock, Ollama) 중심으로 계속 진행
+4. Gemini는 한도 복구 전까지 보류
+
+### 같은 날 추가 작업
+- 프론트 `ResultCard.jsx`의 줄바꿈 보정 시도를 잠시 진행했지만, 사용자가 벤치마크 우선으로 방향을 바꿔 해당 수정은 보류했다.
+- `/analyze` 지연 원인을 확인하려고 `backend/routers/analyze.py`에 시간 측정 로그를 잠시 추가했다가, 사용자 요청에 따라 다시 원래 상태로 복구했다.
+- ChromaDB 경고 로그를 다시 점검했다.
+  - `Failed to send telemetry event ... capture() takes 1 positional argument but 3 were given`는 실제 검색 실패가 아니라 telemetry 전송 경고임을 확인했다.
+  - Codex 환경에서의 실제 검색 실패 원인은 별도로 `onnxruntime` 임시 작업 디렉터리 제약이었다.
+- Gemini 상태를 다시 확인했다.
+  - 사용자 확인 기준 Google AI Studio에서 `RPD 21/20` 상태였고, 2026-07-06 기준 일일 요청 한도 초과로 판단했다.
+  - 따라서 Gemini 실측 벤치마크는 다음 날 다시 진행하기로 정리했다.
+- Mistral 벤치마크를 실제로 진행했다.
+  - `mistral-small-latest`로 `/analyze` 응답을 받아 1차 평가를 완료했다.
+  - 첫 테스트 기준 한국어 품질, 구조화, 직무 적합성이 가장 안정적이어서 당시 기준 기본 LLM 잠정 1순위로 정리했다.
+- Hugging Face 벤치마크를 실제로 진행했다.
+  - 후보를 `Qwen/Qwen2.5-0.5B-Instruct`로 확정했다.
+  - 처음에는 `The requested model ... is not supported by any provider you have enabled.` 오류가 발생했다.
+  - 원인은 Hugging Face `Inference Providers` 라우팅 문제로 판단했고, `backend/services/llm_service.py`가 `HUGGINGFACE_PROVIDER` 환경변수를 읽도록 보강했다.
+  - `.env.example`도 `HUGGINGFACE_TOKEN`, `HUGGINGFACE_PROVIDER=featherless-ai`, `LLM_MODEL=huggingface:Qwen/Qwen2.5-0.5B-Instruct` 예시를 반영하도록 수정했다.
+  - 이후 연결에는 성공했지만, 실제 답변 품질은 Mistral보다 낮고 기본 답변 모델로 쓰기엔 부족하다고 평가했다.
+- `MODEL_BENCHMARK.md`를 추가 보강했다.
+  - Mistral `mistral-small-latest` 1차 평가 기록 추가
+  - Hugging Face `Qwen/Qwen2.5-0.5B-Instruct` 1차 평가 기록 추가
+  - 비교표와 최종 선택 기록을 최신 상태로 갱신
+
+### 추가 작업 후 현재 판단
+- 현재까지의 1차 비교 기준:
+  - `Mistral mistral-small-latest`가 가장 안정적
+  - `Hugging Face Qwen/Qwen2.5-0.5B-Instruct`는 연결 확인 및 저비용 비교용으로는 의미가 있지만 기본 모델로는 부족
+  - `Ollama llama3.2:3b`는 로컬 실습용 보조 후보
+  - `Mock Response`는 fallback 및 시스템 검증용
+- Gemini는 성능 비교 기준점으로 중요하지만, 2026-07-06에는 한도 초과로 재검증이 불가능했다.
+
+### 다음 세션 우선 작업 업데이트
+1. Gemini 일일 한도 복구 후 같은 질문 세트로 다시 실측한다.
+2. Mistral에 2~3개 추가 질문을 넣어 일관성을 확인한다.
+3. 필요하면 Hugging Face의 다른 소형 instruct 모델도 비교 후보로 추가한다.
+4. 프론트 `ResultCard.jsx` 줄바꿈 문제는 벤치마크 정리 후 다시 디버깅한다.
