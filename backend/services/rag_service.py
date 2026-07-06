@@ -42,7 +42,7 @@ def _load_documents(collection: chromadb.Collection) -> None:
     print(f"✅ {collection.count()}개 문서 저장 완료")
 
 
-def search_documents(query: str, n_results: int = 3) -> list:
+def search_documents(query: str, n_results: int = 3,job_type: str = None) -> list:
     """
     사용자 질문과 의미적으로 유사한 문서를 ChromaDB에서 검색합니다.
 
@@ -54,10 +54,14 @@ def search_documents(query: str, n_results: int = 3) -> list:
         [{"text": str, "metadata": dict, "distance": float}, ...]
     """
     collection = get_or_create_collection()
+    where_filter = None
+    if job_type:
+        where_filter = {"job_type": job_type}
 
     results = collection.query(
         query_texts=[query],
-        n_results=min(n_results, collection.count())
+        n_results=min(n_results, collection.count()),
+        where=where_filter
     )
 
     return [
