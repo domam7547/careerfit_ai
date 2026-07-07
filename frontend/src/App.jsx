@@ -1,11 +1,9 @@
 // frontend/src/App.jsx
 import { useState } from "react";
+import { API_ENDPOINTS } from "./api/config";
 import InputForm from "./components/InputForm";
 import ResultCard from "./components/ResultCard";
 import SourceCard from "./components/SourceCard";
-
-const API_BASE = "http://localhost:8000";
-// ⚠️ API Key는 절대 여기에 넣지 않습니다
 
 function App() {
   const [result, setResult] = useState(null);
@@ -18,7 +16,7 @@ function App() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE}/analyze`, {
+      const response = await fetch(API_ENDPOINTS.analyze, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

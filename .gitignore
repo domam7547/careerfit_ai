@@ -1,20 +1,20 @@
- 환경변수 — API Key 포함. 절대 GitHub에 올리지 않는다.
+# 환경변수 — API Key 포함. 절대 GitHub에 올리지 않는다.
 .env
-.env
+.env.*
+!.env.example
+!.env.production.example
 
-backend/.env
-
-backend/chroma_db/
-
-pycache/
-
-*.pyc
 # Python 실행 중 생기는 임시 파일들
+pycache/
 __pycache__/
 *.pyc
 *.pyo
 .venv/
 venv/
+
+# 프론트엔드 빌드/패키지 결과물
+node_modules/
+dist/
 
 # ChromaDB가 자동으로 만드는 폴더 (재생성 가능)
 backend/chroma_db/
@@ -22,11 +22,6 @@ backend/chroma_db/
 # 데이터베이스 파일
 *.db
 
-# 프론트엔드 패키지 폴더 (용량이 매우 크므로 업로드 제외)
-node_modules/
-dist/
-
 # 운영체제가 자동으로 만드는 파일
 .DS_Store
 Thumbs.db
-
