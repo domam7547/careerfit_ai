@@ -184,3 +184,60 @@
 2. Mistral에 추가 질문을 넣어 일관성을 검증한다.
 3. 필요하면 Hugging Face의 다른 소형 instruct 모델을 비교 후보로 추가한다.
 4. 남아 있는 프론트/UI 변경과 기타 변경의 커밋 범위를 정리한다.
+
+## 2026-07-07
+
+### 이번 세션에서 한 작업
+- 프론트엔드 스타일 상태를 다시 점검했다.
+  - `frontend/src/index.css`에 `@tailwind` 지시문이 있었지만, 실제 Tailwind 설정 파일과 패키지 연결이 없다는 점을 확인했다.
+- 사용자가 직접 `frontend/`에서 Tailwind CSS v3를 설치했다.
+  - 실행 명령:
+    - `npm install -D tailwindcss@3 postcss autoprefixer`
+    - `npx tailwindcss init -p`
+- 이후 최소 설정 복구를 진행했다.
+  - 수정 파일:
+    - `frontend/tailwind.config.js`
+    - `frontend/vite.config.js`
+  - 내용:
+    - `tailwind.config.js`의 `content` 경로를 `./index.html`, `./src/**/*.{js,ts,jsx,tsx}`로 설정
+    - `vite.config.js`를 `defineConfig({ plugins: [react()] })` 형태로 정상화
+- 프론트 빌드 검증을 다시 실행했다.
+  - `npm run build` 통과
+  - 이전처럼 raw `@tailwind` 경고가 나오지 않고 CSS 번들이 정상 생성됨
+- 사용자가 실제 화면을 확인했고, 현재 UI가 “깔끔하니 괜찮다”고 판단했다.
+- 이후 5일차 Docker 작업으로 넘어가기 전에 Gemini 벤치마크를 다시 진행했다.
+  - 사용자가 `/analyze` 실제 응답 JSON을 공유했고, 해당 응답을 기준으로 `MODEL_BENCHMARK.md`를 갱신했다.
+  - Gemini 2.5 Flash-Lite 1차 평가 기록 추가
+  - 비교표 갱신
+  - 기본 LLM 잠정 선택을 `Gemini 2.5 Flash-Lite`로 업데이트
+
+### 오늘 기준 현재 판단
+- 프론트엔드는 현재 유지 가능한 상태다.
+  - Tailwind CSS v3 설정이 정상 복구되었고, 실제 화면 확인도 완료했다.
+- Gemini 2.5 Flash-Lite는 현재까지의 1차 비교 기준에서 가장 강한 기본 LLM 후보다.
+  - 한국어 자연스러움
+  - 직무 적합성
+  - 사용자 맥락 반영
+  - 실행 가능한 조언
+  위 항목에서 가장 안정적인 응답을 보였다.
+- 다만 Gemini는 무료 사용 시 일일 한도 제한이 있으므로 보조 후보를 계속 유지해야 한다.
+  - 대체 API 후보: `mistral-small-latest`
+  - fallback 후보: `Mock Response`
+
+### 현재 Git 상태 메모
+- 이번 세션 종료 시점 기준 변경 파일:
+  - 수정됨: `MODEL_BENCHMARK.md`
+  - 수정됨: `frontend/package.json`
+  - 수정됨: `frontend/package-lock.json`
+  - 수정됨: `frontend/vite.config.js`
+  - 미추적: `frontend/postcss.config.js`
+  - 미추적: `frontend/tailwind.config.js`
+- 즉 현재 워킹 트리에는
+  - 프론트 Tailwind 복구 변경
+  - Gemini 벤치마크 문서 갱신
+  이 함께 남아 있다.
+
+### 다음 작업 후보
+1. Gemini 벤치마크 문서 변경만 별도 커밋할지, 프론트 Tailwind 복구와 함께 묶을지 커밋 범위를 정리한다.
+2. 5일차 목표에 맞춰 `backend/compose.yaml`, `.dockerignore`, `README.Docker.md`를 프로젝트 맞춤형으로 정리한다.
+3. `docker compose up --build` 기준으로 `/health`, 가능하면 `/analyze`까지 실행 검증한다.
