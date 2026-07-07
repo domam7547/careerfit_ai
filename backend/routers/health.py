@@ -9,5 +9,5 @@ def health_check():
     """
     return {
         "status": "ok",
-        "message": "CareerFit AI 서버가 정상 동작 중입니다."
+        "message": "CareerFit AI server is running normally."
     }
