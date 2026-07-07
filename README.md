@@ -12,7 +12,7 @@
 | 백엔드 | Python, FastAPI |
 | AI API | Gemini 2.5 Flash-Lite |
 | 데이터 | Pandas, SQLite, ChromaDB |
-| 프론트엔드 | React, 햣 Vite |
+| 프론트엔드 | React, Vite |
 | 실행 환경 | Docker |
 ## 진행 현황
 
